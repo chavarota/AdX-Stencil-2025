@@ -1,18 +1,15 @@
-from agt_server.agents.base_agents.adx_agent import NDaysNCampaignsAgent
-from agt_server.agents.test_agents.adx.tier1.my_agent import Tier1NDaysNCampaignsAgent
-from agt_server.local_games.adx_arena import AdXGameSimulator
-from agt_server.agents.utils.adx.structures import Bid, Campaign, BidBundle 
-from typing import Set, Dict
 import numpy as np
+from typing import Dict, Set
+from agt_server.agents.base_agents.adx_agent import NDaysNCampaignsAgent
+from agt_server.agents.utils.adx.structures import Bid, BidBundle, Campaign
 
-class MyNDaysNCampaignsAgent(NDaysNCampaignsAgent):
-    def __init__(self):
+class HybridLimitAgent(NDaysNCampaignsAgent):
+    def __init__(self, name: str = "A&M", eps: float = 0.1, alpha: float = 0.2):
         super().__init__()
-        self.name = "A&M"
+        self.name = name
         self.beta_grid = np.linspace(0.5, 1.5, 11)
         self.Q = np.zeros((3, 11), dtype=np.float32)
-        self.eps = 0.1 
-        self.a = 0.2
+        self.eps, self.a = eps, alpha
         self.prev_profit = 0.0
         self.choice = {}
 
@@ -61,11 +58,3 @@ class MyNDaysNCampaignsAgent(NDaysNCampaignsAgent):
             self.choice[c.uid] = (b, idx)
 
         return bundles
-
-if __name__ == "__main__":
-    # Here's an opportunity to test offline against some TA agents. Just run this file to do so.
-    test_agents = [MyNDaysNCampaignsAgent()] + [Tier1NDaysNCampaignsAgent(name=f"Agent {i + 1}") for i in range(9)]
-
-    # Don't change this. Adapt initialization to your environment
-    simulator = AdXGameSimulator()
-    simulator.run_simulation(agents=test_agents, num_simulations=500)

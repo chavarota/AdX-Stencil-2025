@@ -1,5 +1,5 @@
-from .my_agent import my_agent_submission
+from .my_agent import MyNDaysNCampaignsAgent
 
 ################### ACTUAL SUBMISSION #####################
-agent_submission = my_agent_submission
+agent_submission = MyNDaysNCampaignsAgent()
 ###########################################################
