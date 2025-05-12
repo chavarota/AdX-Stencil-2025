@@ -10,21 +10,22 @@ from my_agent import MyNDaysNCampaignsAgent
 
 def safe_mean(values: List[float], default: float = 0.0) -> float:
     """np.mean that never returns NaN on an empty list."""
+    values = list(values)
     return np.mean(values) if values else default
 
 class CostTracker2(NDaysNCampaignsAgent):
     def __init__(self) -> None:
         super().__init__()
-        self.name: str = "A&M_new"
+        self.name = "A&M_new"
 
         # learned clearing prices per segment
-        self._segment_price: Dict[MarketSegment, float] = {}
+        self._segment_price = {}
 
         # per‑campaign running stats
-        self._campaign_stats: Dict[int, Dict[str, float]] = {}
+        self._campaign_stats = {}
 
         # population supply (leaf segments only)
-        self._supply: Dict[MarketSegment, int] = {
+        self._supply = {
             MarketSegment(("Male", "Young", "LowIncome")): 1836,
             MarketSegment(("Male", "Young", "HighIncome")):  517,
             MarketSegment(("Male", "Old", "LowIncome")): 1795,
@@ -42,6 +43,16 @@ class CostTracker2(NDaysNCampaignsAgent):
         if seg in self._supply:
             return max(0, self._supply[seg])
         return sum(v for s, v in self._supply.items() if seg <= s and v > 0)
+    
+    def _expected_fulfilment_cost(self, c: Campaign) -> float:
+        """Reach * best CPM we currently know for the target segment."""
+        seg = c.target_segment
+        cpm = self._segment_price.get(
+            seg,
+            self._cheapest_superset_price(seg)            # fallback 1: broader seg
+            or safe_mean(self._segment_price.values(), 1) # fallback 2: global avg
+        )
+        return c.reach * cpm
     
     def _debit_supply(self, seg: MarketSegment, qty: int) -> None:
         """Reduce supply for seg by `qty` impressions (affects only the leaf)."""
@@ -90,7 +101,10 @@ class CostTracker2(NDaysNCampaignsAgent):
     def get_campaign_bids(self, auctions: Set[Campaign]) -> Dict[Campaign, float]:
         # Simple “95 % of reach” reserve for every auction
         # TODO: be smarter about this
-        return {c: 0.95 * c.reach for c in auctions}
+        return {
+            c: 1.4 * self._expected_fulfilment_cost(c)
+            for c in auctions
+        }
     
     def get_ad_bids(self) -> Set[BidBundle]:
         self._supply = self._initial_supply.copy()
