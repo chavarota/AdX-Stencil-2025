@@ -1,5 +1,5 @@
-from .my_agent import MyNDaysNCampaignsAgent
+from .cost_tracker2 import CostTracker2
 
 ################### ACTUAL SUBMISSION #####################
-agent_submission = MyNDaysNCampaignsAgent()
+agent_submission = CostTracker2()
 ###########################################################

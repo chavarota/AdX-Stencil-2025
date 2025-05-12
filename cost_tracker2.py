@@ -74,17 +74,17 @@ class CostTracker2(NDaysNCampaignsAgent):
         if delta_r > 0 and delta_c > 0:
             avg_price = delta_c / delta_r
             blended = (avg_price + stats["prev_bid"]) / 2
-            self._segment_price[campaign.target_segment] = max(avg_price + 0.2, blended)                                            
+            self._segment_price[campaign.target_segment] = max(avg_price, blended)                                            
         else:
             self._segment_price[campaign.target_segment] = stats["prev_bid"] + 0.2
     
     def _leaf_segments_with_price(self, segment: MarketSegment) -> List[MarketSegment]:
         """Return all leaf segments under the given segment whose price we know."""
-        return [s for s in self._segment_price if s.issubset(segment) and len(s) == 3] # CHANGED
+        return [s for s in self._segment_price if s < segment and len(s) == 3] # CHANGED
 
     def _cheapest_superset_price(self, segment: MarketSegment) -> float | None:
         """Cheapest price among supersets that contain a given segment."""
-        prices = [self._segment_price[s] for s in self._segment_price if segment.issubset(s) and len(s) == 3] # CHANGED
+        prices = [self._segment_price[s] for s in self._segment_price if segment < s and len(s) == 3] # CHANGED
         return min(prices) if prices else None
     
     def get_campaign_bids(self, auctions: Set[Campaign]) -> Dict[Campaign, float]:
@@ -113,8 +113,21 @@ class CostTracker2(NDaysNCampaignsAgent):
             if r_left == 0 or b_left == 0:
                 continue
 
+            # if c.end_day == today:
+            #     price = 1.0
+            #     bid_obj = Bid(
+            #         bidder=self,
+            #         auction_item=c.target_segment,
+            #         bid_per_item=price,   # server minimum
+            #         bid_limit=r_left,      # server minimum
+            #     )
+            #     b = BidBundle(c.uid, r_left, {bid_obj})
+            #     bundles.add(b)
+            #     continue
+
+
             tgt = c.target_segment #may not be a leaf segment
-            tgt_price = self._segment_price.get(tgt)
+            tgt_price = self._segment_price.get(tgt) + 0.2
 
             bundle = set()
             spent = 0
